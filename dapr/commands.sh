@@ -4,8 +4,25 @@ dapr status -k
 kubectl apply --namespace dapr-system -f zipkin.yaml
 kubectl apply --namespace dapr-system -f ratelimit.yaml
 
-# Install dependencies on cluster
-#o11y
+# Prometheus
+kubectl create namespace dapr-monitoring
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install dapr-prom prometheus-community/prometheus -n dapr-monitoring
+#kubectl get pods -n dapr-monitoring
+
+
+# Grafana
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana -n dapr-monitoring
+kubectl get secret --namespace dapr-monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+kubectl get pods -n dapr-monitoring
+## Configure Prometheus as data source
+kubectl port-forward svc/grafana 8080:80 -n dapr-monitoring
+##pegar o endereço do prometheus
+kubectl get svc -n dapr-monitoring
+
 
 # Deploy apps
 docker build -t eminetto/auth -f ./auth/Dockerfile .
