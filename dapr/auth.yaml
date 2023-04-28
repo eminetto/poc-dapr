@@ -1,0 +1,59 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: auth
+  labels:
+    app: auth
+spec:
+  selector:
+    app: auth
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    app: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "auth"
+        dapr.io/app-port: "8081"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+        - name: auth
+          image: eminetto/auth:latest
+          env:
+            - name: DB_USER
+              value: "auth_user"
+            - name: DB_PASSWORD
+              value: "auth_pwd"
+            - name: DB_HOST
+              value: "mysql.auth.svc.cluster.local"
+            - name: DB_DATABASE
+              value: "auth_db"
+            - name: DB_PORT
+              value: "3306"
+            - name: PORT
+              value: "8081"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otelcol:4317"
+          ports:
+            - containerPort: 8081
+          imagePullPolicy: Always

@@ -1,0 +1,61 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: votes
+  labels:
+    app: votes
+spec:
+  selector:
+    app: votes
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: votes
+  labels:
+    app: votes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: votes
+  template:
+    metadata:
+      labels:
+        app: votes
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "votes"
+        dapr.io/app-port: "8083"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+        - name: votes
+          image: eminetto/votes:latest
+          env:
+            - name: DB_USER
+              value: "votes_user"
+            - name: DB_PASSWORD
+              value: "votes_pwd"
+            - name: DB_HOST
+              value: "mysql.votes.svc.cluster.local"
+            - name: DB_DATABASE
+              value: "votes_db"
+            - name: DB_PORT
+              value: "3306"
+            - name: PORT
+              value: "8083"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otelcol:4317"
+            - name: AUTH_URL
+              value: "http://localhost:3500/v1.0/invoke/auth/method/v1/auth"
+          ports:
+            - containerPort: 8083
+          imagePullPolicy: Always

@@ -1,4 +1,6 @@
-# API Observability
+# PoC Dapr
+
+##@TODO: update readme to reflect the PoC
 
 ### Building
 

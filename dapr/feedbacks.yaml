@@ -1,0 +1,61 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: feedbacks
+  labels:
+    app: feedbacks
+spec:
+  selector:
+    app: feedbacks
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedbacks
+  labels:
+    app: feedbacks
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedbacks
+  template:
+    metadata:
+      labels:
+        app: feedbacks
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "feedbacks"
+        dapr.io/app-port: "8082"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+        - name: feedbacks
+          image: eminetto/feedbacks:latest
+          env:
+            - name: DB_USER
+              value: "feedbacks_user"
+            - name: DB_PASSWORD
+              value: "feedbacks_pwd"
+            - name: DB_HOST
+              value: "mysql.feedbacks.svc.cluster.local"
+            - name: DB_DATABASE
+              value: "feedbacks_db"
+            - name: DB_PORT
+              value: "3306"
+            - name: PORT
+              value: "8082"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otelcol:4317"
+            - name: AUTH_URL
+              value: "http://localhost:3500/v1.0/invoke/auth/method/v1/auth"
+          ports:
+            - containerPort: 8082
+          imagePullPolicy: Always

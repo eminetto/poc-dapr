@@ -1,8 +1,9 @@
-module github.com/eminetto/api-o11y
+module github.com/PicPay/poc-dapr
 
 go 1.20
 
 require (
+	github.com/eminetto/api-o11y v0.0.11
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
