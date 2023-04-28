@@ -35,6 +35,8 @@ spec:
         dapr.io/app-port: "8083"
         dapr.io/enable-api-logging: "true"
         dapr.io/config: "dapr-config"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
     spec:
       containers:
         - name: votes
@@ -55,7 +57,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "otelcol:4317"
             - name: AUTH_URL
-              value: "http://localhost:3500/v1.0/invoke/auth/method/v1/auth"
+              value: "http://localhost:3500/v1.0/invoke/auth/method"
           ports:
             - containerPort: 8083
           imagePullPolicy: Always

@@ -1,7 +1,7 @@
 # PoC Dapr
 
-##@TODO: update readme to reflect the PoC
 
+# Running localy with Docker Compose
 ### Building
 
 ```
@@ -61,3 +61,123 @@ curl -X "POST" "http://localhost:8083/v1/vote" \
 }'
 ```
 
+
+## Running on Kubernetes
+
+### Step 1 - Setup Dapr on your Kubernetes cluster
+
+```
+dapr init --kubernetes --wait
+dapr status -k
+kubectl apply --namespace dapr-system -f dapr/zipkin.yaml
+kubectl apply --namespace dapr-system -f dapr/ratelimit.yaml
+```
+
+### Prometheus
+
+```
+kubectl create namespace dapr-monitoring
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install dapr-prom prometheus-community/prometheus -n dapr-monitoring
+```
+
+### Grafana
+
+```
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana -n dapr-monitoring
+kubectl get secret --namespace dapr-monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+kubectl get pods -n dapr-monitoring
+```
+
+### [Configure Prometheus as data source](https://docs.dapr.io/operations/monitoring/metrics/grafana/#configure-prometheus-as-data-source)
+
+
+### Deploy apps
+
+```
+docker build -t eminetto/auth -f ./auth/Dockerfile .
+docker push eminetto/auth:latest
+```
+
+```
+docker build -t eminetto/feedbacks -f ./feedbacks/Dockerfile .
+docker push eminetto/feedbacks:latest
+```
+
+```
+docker build -t eminetto/votes -f ./votes/Dockerfile .
+docker push eminetto/votes:latest
+```
+
+```
+kubectl create namespace auth
+kubectl apply --namespace auth -f dapr/mysql_auth.yaml
+kubectl apply --namespace auth -f dapr/dapr-config-auth.yaml
+kubectl apply --namespace auth -f dapr/auth.yaml
+kubectl port-forward --namespace auth deployment/auth 3500:3500
+```
+
+```
+kubectl create namespace feedbacks
+kubectl apply --namespace feedbacks -f dapr/mysql_feedbacks.yaml
+kubectl apply --namespace feedbacks -f dapr/dapr-config-feedbacks.yaml
+kubectl apply --namespace feedbacks -f dapr/feedbacks.yaml
+kubectl port-forward --namespace feedbacks deployment/feedbacks 3501:3500
+```
+
+```
+kubectl create namespace votes
+kubectl apply --namespace votes -f dapr/mysql_votes.yaml
+kubectl apply --namespace votes -f dapr/dapr-config-votes.yaml
+kubectl apply --namespace votes -f dapr/votes.yaml
+kubectl port-forward --namespace votes deployment/votes 3502:3500
+```
+
+### Accessing services
+
+```
+curl -v -X "POST" "http://localhost:3500/v1.0/invoke/auth/method/v1/auth" \
+     -H 'Accept: application/json' \
+     -H 'Content-Type: application/json' \
+     -d $'{
+  "email": "eminetto@email.com",
+  "password": "12345"
+}'
+```
+
+```
+curl -v -X "POST" "http://localhost:3501/v1.0/invoke/feedbacks/method/v1/feedback" \
+     -H 'Accept: application/json' \
+     -H 'Content-Type: application/json' \
+	 -H 'Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVtaW5ldHRvQGVtYWlsLmNvbSIsImV4cCI6MTY4MjY5MDY5MiwiaWF0IjoxNjgyNjg3MDYyLCJuYmYiOjE2ODI2ODcwNjJ9.KSZ9dW-aseGSxa6x9vZbP06wY7jWVFQ6r_kUuwsHUUk' \
+     -d $'{
+  "title": "Feedback test",
+  "body": "Feedback body"
+}'
+```
+
+```
+curl -v -X "POST" "http://localhost:3502/v1.0/invoke/votes/method/v1/vote" \
+     -H 'Accept: application/json' \
+     -H 'Content-Type: application/json' \
+	 -H 'Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVtaW5ldHRvQGVtYWlsLmNvbSIsImV4cCI6MTY4MjY5MDY5MiwiaWF0IjoxNjgyNjg3MDYyLCJuYmYiOjE2ODI2ODcwNjJ9.KSZ9dW-aseGSxa6x9vZbP06wY7jWVFQ6r_kUuwsHUUk' \
+     -d $'{
+  "talk_name": "Go e Microserviços",
+  "score": "10"
+}'
+
+```
+### Dapr Dashboard
+
+```
+dapr dashboard -k -p 9999
+```
+
+### Zipkin
+
+```
+kubectl port-forward --namespace dapr-system deployment/zipkin 9411:9411
+```
