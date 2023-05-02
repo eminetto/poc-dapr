@@ -5,16 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/eminetto/api-o11y/feedbacks/feedback"
-	"github.com/eminetto/api-o11y/feedbacks/feedback/mysql"
-	"github.com/eminetto/api-o11y/internal/middleware"
-	"github.com/eminetto/api-o11y/internal/telemetry"
+	"github.com/eminetto/poc-dapr/feedbacks/feedback"
+	"github.com/eminetto/poc-dapr/feedbacks/feedback/mysql"
+	"github.com/eminetto/poc-dapr/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
-	telemetrymiddleware "github.com/go-chi/telemetry"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/codes"
 	"net/http"
 	"os"
 	"time"
@@ -32,22 +29,14 @@ func main() {
 	}
 	defer db.Close()
 	ctx := context.Background()
-	otel, err := telemetry.NewJaeger(ctx, "feedbacks")
-	if err != nil {
-		logger.Panic().Msg(err.Error())
-	}
-	defer otel.Shutdown(ctx)
 
-	repo := mysql.NewUserMySQL(db, otel)
-	fService := feedback.NewService(repo, otel)
+	repo := mysql.NewUserMySQL(db)
+	fService := feedback.NewService(repo)
 
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Use(telemetrymiddleware.Collector(telemetrymiddleware.Config{
-		AllowAny: true,
-	}, []string{"/v1"})) // path prefix filters basically records generic http request metrics
-	r.Use(middleware.IsAuthenticated(ctx, otel))
-	r.Post("/v1/feedback", storeFeedback(ctx, fService, otel))
+	r.Use(middleware.IsAuthenticated(ctx))
+	r.Post("/v1/feedback", storeFeedback(ctx, fService))
 
 	http.Handle("/", r)
 	srv := &http.Server{
@@ -62,11 +51,9 @@ func main() {
 	}
 }
 
-func storeFeedback(ctx context.Context, fService feedback.UseCase, otel telemetry.Telemetry) http.HandlerFunc {
+func storeFeedback(ctx context.Context, fService feedback.UseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		oplog := httplog.LogEntry(r.Context())
-		ctx, span := otel.Start(ctx, "store")
-		defer span.End()
 		var f feedback.Feedback
 		err := json.NewDecoder(r.Body).Decode(&f)
 		if err != nil {
@@ -82,15 +69,11 @@ func storeFeedback(ctx context.Context, fService feedback.UseCase, otel telemetr
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			oplog.Error().Msg(err.Error())
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return
 		}
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			oplog.Error().Msg(err.Error())
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return
 		}
 		return

@@ -1,4 +1,4 @@
-module github.com/eminetto/api-o11y/votes
+module github.com/eminetto/poc-dapr/votes
 
 go 1.20
 

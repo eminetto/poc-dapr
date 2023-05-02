@@ -1,4 +1,4 @@
-module github.com/PicPay/poc-dapr
+module github.com/eminetto/poc-dapr
 
 go 1.20
 

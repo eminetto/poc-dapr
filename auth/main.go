@@ -4,20 +4,23 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/eminetto/api-o11y/auth/security"
-	"github.com/eminetto/api-o11y/auth/user"
-	"github.com/eminetto/api-o11y/auth/user/mysql"
-	"github.com/eminetto/api-o11y/internal/telemetry"
+	"github.com/eminetto/poc-dapr/auth/security"
+	"github.com/eminetto/poc-dapr/auth/user"
+	"github.com/eminetto/poc-dapr/auth/user/mysql"
 	"github.com/go-chi/httplog"
-	"go.opentelemetry.io/otel/codes"
 	"net/http"
 	"os"
 	"time"
 
 	"context"
+	dapr "github.com/dapr/go-sdk/client"
 	"github.com/go-chi/chi/v5"
-	telemetrymiddleware "github.com/go-chi/telemetry"
 	_ "github.com/go-sql-driver/mysql"
+)
+
+const (
+	pubsubComponentName = "auditpubsub"
+	pubsubTopic         = "audit"
 )
 
 func main() {
@@ -34,22 +37,20 @@ func main() {
 	defer db.Close()
 
 	ctx := context.Background()
-	otel, err := telemetry.NewJaeger(ctx, "auth")
-	if err != nil {
-		logger.Panic().Msg(err.Error())
-	}
-	defer otel.Shutdown(ctx)
 
-	repo := mysql.NewUserMySQL(db, otel)
-	uService := user.NewService(repo, otel)
+	repo := mysql.NewUserMySQL(db)
+	uService := user.NewService(repo)
+
+	daprClient, err := dapr.NewClient()
+	if err != nil {
+		panic(err)
+	}
+	defer daprClient.Close()
 
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Use(telemetrymiddleware.Collector(telemetrymiddleware.Config{
-		AllowAny: true,
-	}, []string{"/v1"})) // path prefix filters basically records generic http request metrics
-	r.Post("/v1/auth", userAuth(ctx, uService, otel))
-	r.Post("/v1/validate-token", validateToken(ctx, otel))
+	r.Post("/v1/auth", userAuth(ctx, uService, daprClient))
+	r.Post("/v1/validate-token", validateToken(ctx, daprClient))
 
 	http.Handle("/", r)
 	srv := &http.Server{
@@ -64,11 +65,9 @@ func main() {
 	}
 }
 
-func userAuth(ctx context.Context, uService user.UseCase, otel telemetry.Telemetry) http.HandlerFunc {
+func userAuth(ctx context.Context, uService user.UseCase, daprClient dapr.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		oplog := httplog.LogEntry(r.Context())
-		ctx, span := otel.Start(ctx, "userAuth")
-		defer span.End()
 		var param struct {
 			Email    string `json:"email"`
 			Password string `json:"password"`
@@ -76,16 +75,12 @@ func userAuth(ctx context.Context, uService user.UseCase, otel telemetry.Telemet
 		err := json.NewDecoder(r.Body).Decode(&param)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}
 		err = uService.ValidateUser(ctx, param.Email, param.Password)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}
@@ -96,35 +91,34 @@ func userAuth(ctx context.Context, uService user.UseCase, otel telemetry.Telemet
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			oplog.Error().Msg(err.Error())
-			span.SetStatus(codes.Error, err.Error())
-			span.RecordError(err)
 			return
+		}
+
+		action := `{"action":"new token generated"}`
+
+		err = daprClient.PublishEvent(ctx, pubsubComponentName, pubsubTopic, []byte(action))
+		if err != nil {
+			panic(err)
 		}
 
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			oplog.Error().Msg(err.Error())
-			span.SetStatus(codes.Error, err.Error())
-			span.RecordError(err)
 			return
 		}
 		return
 	}
 }
 
-func validateToken(ctx context.Context, otel telemetry.Telemetry) http.HandlerFunc {
+func validateToken(ctx context.Context, daprClient dapr.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		oplog := httplog.LogEntry(r.Context())
-		_, span := otel.Start(ctx, "validateToken")
-		defer span.End()
 		var param struct {
 			Token string `json:"token"`
 		}
 		err := json.NewDecoder(r.Body).Decode(&param)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}
@@ -132,16 +126,12 @@ func validateToken(ctx context.Context, otel telemetry.Telemetry) http.HandlerFu
 		t, err := security.ParseToken(param.Token)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}
 		tData, err := security.GetClaims(t)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}
@@ -150,10 +140,15 @@ func validateToken(ctx context.Context, otel telemetry.Telemetry) http.HandlerFu
 		}
 		result.Email = tData["email"].(string)
 
+		action := `{"action":"token validated:` + result.Email + `"}`
+
+		err = daprClient.PublishEvent(ctx, pubsubComponentName, pubsubTopic, []byte(action))
+		if err != nil {
+			panic(err)
+		}
+
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			w.WriteHeader(http.StatusBadGateway)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			oplog.Error().Msg(err.Error())
 			return
 		}

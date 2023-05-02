@@ -3,34 +3,26 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"github.com/eminetto/api-o11y/feedbacks/feedback"
-	"github.com/eminetto/api-o11y/internal/telemetry"
-	"go.opentelemetry.io/otel/codes"
+	"github.com/eminetto/poc-dapr/feedbacks/feedback"
 	"time"
 )
 
 // FeedbackMySQL mysql repo
 type FeedbackMySQL struct {
-	db        *sql.DB
-	telemetry telemetry.Telemetry
+	db *sql.DB
 }
 
 // NewFeedbackMySQL create new repository
-func NewUserMySQL(db *sql.DB, telemetry telemetry.Telemetry) *FeedbackMySQL {
+func NewUserMySQL(db *sql.DB) *FeedbackMySQL {
 	return &FeedbackMySQL{
-		db:        db,
-		telemetry: telemetry,
+		db: db,
 	}
 }
 
 // Store a feedback
 func (r *FeedbackMySQL) Store(ctx context.Context, f *feedback.Feedback) error {
-	ctx, span := r.telemetry.Start(ctx, "mysql")
-	defer span.End()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	defer tx.Commit()
@@ -48,8 +40,6 @@ func (r *FeedbackMySQL) Store(ctx context.Context, f *feedback.Feedback) error {
 		time.Now().Format("2006-01-02 15:04:05"),
 	)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		tx.Rollback()
 		return err
 	}

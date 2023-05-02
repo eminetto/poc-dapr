@@ -5,16 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/eminetto/api-o11y/internal/middleware"
-	"github.com/eminetto/api-o11y/internal/telemetry"
-	"github.com/eminetto/api-o11y/votes/vote"
-	"github.com/eminetto/api-o11y/votes/vote/mysql"
+	"github.com/eminetto/poc-dapr/internal/middleware"
+	"github.com/eminetto/poc-dapr/votes/vote"
+	"github.com/eminetto/poc-dapr/votes/vote/mysql"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
-	telemetrymiddleware "github.com/go-chi/telemetry"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/codes"
 	"net/http"
 	"os"
 	"time"
@@ -33,23 +30,15 @@ func main() {
 	defer db.Close()
 
 	ctx := context.Background()
-	otel, err := telemetry.NewJaeger(ctx, "votes")
-	if err != nil {
-		logger.Panic().Msg(err.Error())
-	}
-	defer otel.Shutdown(ctx)
 
-	repo := mysql.NewVoteMySQL(db, otel)
+	repo := mysql.NewVoteMySQL(db)
 
-	vService := vote.NewService(repo, otel)
+	vService := vote.NewService(repo)
 
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(logger))
-	r.Use(telemetrymiddleware.Collector(telemetrymiddleware.Config{
-		AllowAny: true,
-	}, []string{"/v1"})) // path prefix filters basically records generic http request metrics
-	r.Use(middleware.IsAuthenticated(ctx, otel))
-	r.Post("/v1/vote", storeVote(ctx, vService, otel))
+	r.Use(middleware.IsAuthenticated(ctx))
+	r.Post("/v1/vote", storeVote(ctx, vService))
 
 	http.Handle("/", r)
 	srv := &http.Server{
@@ -64,18 +53,14 @@ func main() {
 	}
 }
 
-func storeVote(ctx context.Context, vService vote.UseCase, otel telemetry.Telemetry) http.HandlerFunc {
+func storeVote(ctx context.Context, vService vote.UseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		oplog := httplog.LogEntry(r.Context())
-		ctx, span := otel.Start(ctx, "store")
-		defer span.End()
 		var v vote.Vote
 		err := json.NewDecoder(r.Body).Decode(&v)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			oplog.Error().Msg(err.Error())
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return
 		}
 		v.Email = r.Context().Value("email").(string)
@@ -86,15 +71,11 @@ func storeVote(ctx context.Context, vService vote.UseCase, otel telemetry.Teleme
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			oplog.Error().Msg(err.Error())
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return
 		}
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			oplog.Error().Msg(err.Error())
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return
 		}
 		return

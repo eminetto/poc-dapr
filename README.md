@@ -1,7 +1,7 @@
 # PoC Dapr
 
 
-# Running localy with Docker Compose
+# Running locally with Docker Compose
 ### Building
 
 ```
@@ -113,6 +113,11 @@ docker push eminetto/votes:latest
 ```
 
 ```
+docker build -t eminetto/audit -f ./audit/Dockerfile .
+docker push eminetto/audit:latest
+```
+
+```
 kubectl create namespace auth
 kubectl apply --namespace auth -f dapr/mysql_auth.yaml
 kubectl apply --namespace auth -f dapr/dapr-config-auth.yaml
@@ -134,6 +139,13 @@ kubectl apply --namespace votes -f dapr/mysql_votes.yaml
 kubectl apply --namespace votes -f dapr/dapr-config-votes.yaml
 kubectl apply --namespace votes -f dapr/votes.yaml
 kubectl port-forward --namespace votes deployment/votes 3502:3500
+```
+
+```
+kubectl create namespace audit
+kubectl apply --namespace votes -f dapr/dapr-config-audit.yaml
+kubectl apply --namespace votes -f dapr/audit.yaml
+kubectl port-forward --namespace votes deployment/audit 3503:3500
 ```
 
 ### Accessing services

@@ -1,4 +1,4 @@
-module github.com/eminetto/api-o11y/feedbacks
+module github.com/eminetto/poc-dapr/feedbacks
 
 go 1.20
 

@@ -4,29 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/eminetto/api-o11y/internal/telemetry"
-	"go.opentelemetry.io/otel/codes"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 )
 
-func IsAuthenticated(ctx context.Context, telemetry telemetry.Telemetry) func(next http.Handler) http.Handler {
-	return Handler(ctx, telemetry)
+func IsAuthenticated(ctx context.Context) func(next http.Handler) http.Handler {
+	return Handler(ctx)
 }
 
-func Handler(ctx context.Context, telemetry telemetry.Telemetry) func(next http.Handler) http.Handler {
+func Handler(ctx context.Context) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(rw http.ResponseWriter, r *http.Request) {
-			_, span := telemetry.Start(ctx, "IsAuthenticated")
-			defer span.End()
 			errorMessage := "Erro na autenticação"
 			tokenString := r.Header.Get("Authorization")
 			if tokenString == "" {
 				err := errors.New("Unauthorized")
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
 				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
 			}
@@ -36,8 +30,6 @@ func Handler(ctx context.Context, telemetry telemetry.Telemetry) func(next http.
 
 			req, err := http.Post(os.Getenv("AUTH_URL")+"/v1/validate-token", "text/plain", strings.NewReader(payload))
 			if err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
 				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
 			}
@@ -48,8 +40,6 @@ func Handler(ctx context.Context, telemetry telemetry.Telemetry) func(next http.
 			var res result
 			err = json.NewDecoder(req.Body).Decode(&res)
 			if err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
 				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
 			}
