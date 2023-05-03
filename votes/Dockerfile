@@ -10,7 +10,7 @@ RUN go mod tidy
 # Build executable
 RUN go build -o /src/votes ./
 
-FROM scratch
+FROM golang:1.20-alpine
 WORKDIR /src
 COPY --from=builder /src/votes ./
 EXPOSE 8083

@@ -70,7 +70,6 @@ curl -X "POST" "http://localhost:8083/v1/vote" \
 dapr init --kubernetes --wait
 dapr status -k
 kubectl apply --namespace dapr-system -f dapr/zipkin.yaml
-kubectl apply --namespace dapr-system -f dapr/ratelimit.yaml
 ```
 
 ### Prometheus
@@ -90,6 +89,15 @@ helm repo update
 helm install grafana grafana/grafana -n dapr-monitoring
 kubectl get secret --namespace dapr-monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 kubectl get pods -n dapr-monitoring
+```
+
+### Redis (used to pub-sub example)
+
+```
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install redis bitnami/redis --set image.tag=6.2
+###password
+kubectl get secret --namespace default redis -o jsonpath="{.data.redis-password}" | base64 --decode
 ```
 
 ### [Configure Prometheus as data source](https://docs.dapr.io/operations/monitoring/metrics/grafana/#configure-prometheus-as-data-source)
@@ -120,6 +128,8 @@ docker push eminetto/audit:latest
 ```
 kubectl create namespace auth
 kubectl apply --namespace auth -f dapr/mysql_auth.yaml
+kubectl apply --namespace auth -f dapr/redis.yaml
+kubectl apply --namespace auth -f dapr/ratelimit.yaml
 kubectl apply --namespace auth -f dapr/dapr-config-auth.yaml
 kubectl apply --namespace auth -f dapr/auth.yaml
 kubectl port-forward --namespace auth deployment/auth 3500:3500
@@ -143,9 +153,8 @@ kubectl port-forward --namespace votes deployment/votes 3502:3500
 
 ```
 kubectl create namespace audit
-kubectl apply --namespace votes -f dapr/dapr-config-audit.yaml
-kubectl apply --namespace votes -f dapr/audit.yaml
-kubectl port-forward --namespace votes deployment/audit 3503:3500
+kubectl apply --namespace audit -f dapr/redis.yaml
+kubectl apply --namespace audit -f dapr/audit.yaml
 ```
 
 ### Accessing services

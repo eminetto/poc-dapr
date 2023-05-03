@@ -25,6 +25,7 @@ func main() {
 
 	// Create the new server on appPort and add a topic listener
 	s := daprd.NewService(":" + appPort)
+	fmt.Println(s)
 	err := s.AddTopicEventHandler(sub, eventHandler)
 	if err != nil {
 		log.Fatalf("error adding topic subscription: %v", err)

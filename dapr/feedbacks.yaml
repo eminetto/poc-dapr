@@ -57,7 +57,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "otelcol:4317"
             - name: AUTH_URL
-              value: "http://localhost:3500/v1.0/invoke/auth/method"
+              value: "http://localhost:3500/v1.0/invoke/auth.auth/method"
           ports:
             - containerPort: 8082
           imagePullPolicy: Always

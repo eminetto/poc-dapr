@@ -98,7 +98,7 @@ func userAuth(ctx context.Context, uService user.UseCase, daprClient dapr.Client
 
 		err = daprClient.PublishEvent(ctx, pubsubComponentName, pubsubTopic, []byte(action))
 		if err != nil {
-			panic(err)
+			oplog.Error().Msg(err.Error())
 		}
 
 		if err := json.NewEncoder(w).Encode(result); err != nil {
@@ -144,7 +144,7 @@ func validateToken(ctx context.Context, daprClient dapr.Client) http.HandlerFunc
 
 		err = daprClient.PublishEvent(ctx, pubsubComponentName, pubsubTopic, []byte(action))
 		if err != nil {
-			panic(err)
+			oplog.Error().Msg(err.Error())
 		}
 
 		if err := json.NewEncoder(w).Encode(result); err != nil {

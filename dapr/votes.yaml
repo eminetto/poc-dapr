@@ -57,7 +57,8 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "otelcol:4317"
             - name: AUTH_URL
-              value: "http://localhost:3500/v1.0/invoke/auth/method"
+#              https://docs.dapr.io/developing-applications/building-blocks/service-invocation/service-invocation-namespaces/
+              value: "http://localhost:3500/v1.0/invoke/auth.auth/method"
           ports:
             - containerPort: 8083
           imagePullPolicy: Always
