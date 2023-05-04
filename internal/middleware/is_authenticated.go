@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	dapr "github.com/dapr/go-sdk/client"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 )
 
 func IsAuthenticated(ctx context.Context) func(next http.Handler) http.Handler {
@@ -26,35 +27,18 @@ func Handler(ctx context.Context) func(next http.Handler) http.Handler {
 			payload := `{
 				"token": "` + tokenString + `"
 			}`
-			//request using http
-			//req, err := http.Post(os.Getenv("AUTH_URL")+"/v1/validate-token", "text/plain", strings.NewReader(payload))
-			//if err != nil {
-			//	respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
-			//	return
-			//}
-			//defer req.Body.Close()
-
-			//request using dapr sdk
-			client, err := dapr.NewClient()
+			req, err := http.Post(os.Getenv("AUTH_URL")+"/v1/validate-token", "text/plain", strings.NewReader(payload))
 			if err != nil {
-				respondWithError(rw, http.StatusInternalServerError, err.Error(), errorMessage)
+				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
 			}
-			// invoke a method called EchoMethod on another dapr enabled service
-			content := &dapr.DataContent{
-				ContentType: "text/plain",
-				Data:        []byte(payload),
-			}
-			data, err := client.InvokeMethodWithContent(ctx, "auth.auth", "/v1/validate-token", "post", content)
-			if err != nil {
-				respondWithError(rw, http.StatusInternalServerError, err.Error(), errorMessage)
-			}
+			defer req.Body.Close()
+
 			type result struct {
 				Email string `json:"email"`
 			}
 			var res result
-			//err = json.NewDecoder(req.Body).Decode(&res)
-			err = json.Unmarshal(data, &res)
+			err = json.NewDecoder(req.Body).Decode(&res)
 			if err != nil {
 				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
