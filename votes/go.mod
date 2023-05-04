@@ -3,7 +3,7 @@ module github.com/eminetto/poc-dapr/votes
 go 1.20
 
 require (
-	github.com/eminetto/poc-dapr v0.0.3
+	github.com/eminetto/poc-dapr v0.0.4
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/httplog v0.3.0
 	github.com/go-sql-driver/mysql v1.7.0

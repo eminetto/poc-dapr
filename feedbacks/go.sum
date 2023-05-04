@@ -65,6 +65,8 @@ github.com/eminetto/poc-dapr v0.0.2 h1:oYeP7Zoe8Zo7TWAGtq9knxFzjqADwdnCT5S1xro0z
 github.com/eminetto/poc-dapr v0.0.2/go.mod h1:6cO0zvpUSuZhhIiUYDnsznOhi2+474SI7GwkC5UVcTw=
 github.com/eminetto/poc-dapr v0.0.3 h1:i71ItPxGBOozT2C0vwFXfVo1UTDOqpmlIBimByvs8h0=
 github.com/eminetto/poc-dapr v0.0.3/go.mod h1:6cO0zvpUSuZhhIiUYDnsznOhi2+474SI7GwkC5UVcTw=
+github.com/eminetto/poc-dapr v0.0.4 h1:Y+oyEvnI1zdqtuhsKZGGBhf3mY1CFOeUghyv3sNffjA=
+github.com/eminetto/poc-dapr v0.0.4/go.mod h1:6cO0zvpUSuZhhIiUYDnsznOhi2+474SI7GwkC5UVcTw=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=

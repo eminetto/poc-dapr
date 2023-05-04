@@ -1,7 +1,9 @@
 # PoC Dapr
 
+![APIs](resources/apis.png)
 
 # Running locally with Docker Compose
+
 ### Building
 
 ```
