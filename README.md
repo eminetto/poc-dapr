@@ -110,6 +110,9 @@ kubectl get secret --namespace default redis -o jsonpath="{.data.redis-password}
 
 https://docs.dapr.io/operations/monitoring/metrics/grafana/#configure-prometheus-as-data-source
 
+### Metrics Available
+
+https://github.com/dapr/dapr/blob/master/docs/development/dapr-metrics.md
 
 ### Deploy apps
 
@@ -139,7 +142,7 @@ kubectl apply --namespace auth -f auth/ops/k8s/mysql.yaml
 kubectl apply --namespace auth -f auth/ops/dapr/redis.yaml
 kubectl apply --namespace auth -f auth/ops/dapr/ratelimit.yaml
 kubectl apply --namespace auth -f auth/ops/dapr/dapr-config.yaml
-kubectl apply --namespace auth -f auth/ops/dapr/auth.yaml
+kubectl apply --namespace auth -f auth/ops/k8s/auth.yaml
 kubectl port-forward --namespace auth deployment/auth 3500:3500
 ```
 
@@ -147,7 +150,7 @@ kubectl port-forward --namespace auth deployment/auth 3500:3500
 kubectl create namespace feedbacks
 kubectl apply --namespace feedbacks -f feedbacks/ops/k8s/mysql.yaml
 kubectl apply --namespace feedbacks -f feedbacks/ops/dapr/dapr-config.yaml
-kubectl apply --namespace feedbacks -f feedbacks/ops/dapr/feedbacks.yaml
+kubectl apply --namespace feedbacks -f feedbacks/ops/k8s/feedbacks.yaml
 kubectl port-forward --namespace feedbacks deployment/feedbacks 3501:3500
 ```
 
@@ -155,7 +158,7 @@ kubectl port-forward --namespace feedbacks deployment/feedbacks 3501:3500
 kubectl create namespace votes
 kubectl apply --namespace votes -f votes/ops/k8s/mysql.yaml
 kubectl apply --namespace votes -f votes/ops/dapr/dapr-config.yaml
-kubectl apply --namespace votes -f votes/ops/dapr/votes.yaml
+kubectl apply --namespace votes -f votes/ops/k8s/votes.yaml
 kubectl port-forward --namespace votes deployment/votes 3502:3500
 ```
 
@@ -163,7 +166,7 @@ kubectl port-forward --namespace votes deployment/votes 3502:3500
 kubectl create namespace audit
 kubectl apply --namespace audit -f audit/ops/dapr/redis.yaml
 kubectl apply --namespace audit -f audit/ops/dapr/dapr-config.yaml
-kubectl apply --namespace audit -f audit/ops/dapr/audit.yaml
+kubectl apply --namespace audit -f audit/ops/k8s/audit.yaml
 ```
 
 ### Accessing services
