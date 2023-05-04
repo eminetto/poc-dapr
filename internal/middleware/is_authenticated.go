@@ -23,9 +23,9 @@ func Handler(ctx context.Context) func(next http.Handler) http.Handler {
 				respondWithError(rw, http.StatusUnauthorized, err.Error(), errorMessage)
 				return
 			}
-			//	payload := `{
-			//	"token": "` + tokenString + `"
-			//}`
+			payload := `{
+				"token": "` + tokenString + `"
+			}`
 			//request using http
 			//req, err := http.Post(os.Getenv("AUTH_URL")+"/v1/validate-token", "text/plain", strings.NewReader(payload))
 			//if err != nil {
@@ -40,7 +40,15 @@ func Handler(ctx context.Context) func(next http.Handler) http.Handler {
 				respondWithError(rw, http.StatusInternalServerError, err.Error(), errorMessage)
 				return
 			}
-			data, err := client.InvokeMethod(ctx, "auth.auth", "/v1/validate-token", "post")
+			// invoke a method called EchoMethod on another dapr enabled service
+			content := &dapr.DataContent{
+				ContentType: "text/plain",
+				Data:        []byte(payload),
+			}
+			data, err := client.InvokeMethodWithContent(ctx, "auth.auth", "/v1/validate-token", "post", content)
+			if err != nil {
+				respondWithError(rw, http.StatusInternalServerError, err.Error(), errorMessage)
+			}
 			type result struct {
 				Email string `json:"email"`
 			}
