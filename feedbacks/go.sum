@@ -61,6 +61,10 @@ github.com/eminetto/api-o11y v0.0.11 h1:PbFfGp1Cy7QaR55OBsTE1kovkJw+CT7ZBPeICfiP
 github.com/eminetto/api-o11y v0.0.11/go.mod h1:BVyINe/YXuOod6cx9t46GBxnZ5ugi+oGHC59sMThk7Y=
 github.com/eminetto/poc-dapr v0.0.1 h1:OK+iZ7N/40CkpcThd6AhfuRFOE7yalw89BldO/N6FWo=
 github.com/eminetto/poc-dapr v0.0.1/go.mod h1:0yAs/tBHumahS1O9uqiT4OWmqNV5zUMOh/a+btGMQyA=
+github.com/eminetto/poc-dapr v0.0.2 h1:oYeP7Zoe8Zo7TWAGtq9knxFzjqADwdnCT5S1xro0zxU=
+github.com/eminetto/poc-dapr v0.0.2/go.mod h1:6cO0zvpUSuZhhIiUYDnsznOhi2+474SI7GwkC5UVcTw=
+github.com/eminetto/poc-dapr v0.0.3 h1:i71ItPxGBOozT2C0vwFXfVo1UTDOqpmlIBimByvs8h0=
+github.com/eminetto/poc-dapr v0.0.3/go.mod h1:6cO0zvpUSuZhhIiUYDnsznOhi2+474SI7GwkC5UVcTw=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
