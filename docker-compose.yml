@@ -1,9 +1,10 @@
 version: "3"
-x-default-logging: &logging
-   driver: "json-file"
-   options:
-     max-size: "5m"
-     max-file: "2"
+x-default-logging:
+  &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
 networks:
   default:
     name: api-o11y
@@ -129,10 +130,10 @@ services:
           memory: 300M
     restart: unless-stopped
     ports:
-      - "${JAEGER_SERVICE_PORT}:${JAEGER_SERVICE_PORT}"                    # Jaeger UI
+      - "${JAEGER_SERVICE_PORT}:${JAEGER_SERVICE_PORT}" # Jaeger UI
       - "14250:14250"
       - "14268:14268" # Jaeger collector
-      - "4317"                           # OTLP gRPC default port
+      - "4317" # OTLP gRPC default port
     environment:
       - COLLECTOR_OTLP_ENABLED=true
       - METRICS_STORAGE_TYPE=prometheus
@@ -151,21 +152,26 @@ services:
   # OpenTelemetry Collector
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.74.0
+    user: 501:20
     container_name: otel-col
     deploy:
       resources:
         limits:
           memory: 125M
     restart: unless-stopped
-    command: [ "--config=/etc/otelcol-config.yml", "--config=/etc/otelcol-config-extras.yml" ]
+    command:
+      [
+        "--config=/etc/otelcol-config.yml",
+        "--config=/etc/otelcol-config-extras.yml"
+      ]
     volumes:
       - ./ops/otelcollector/otelcol-config.yml:/etc/otelcol-config.yml
       - ./ops/otelcollector/otelcol-config-extras.yml:/etc/otelcol-config-extras.yml
     ports:
-      - "4317"          # OTLP over gRPC receiver
-      - "4318:4318"     # OTLP over HTTP receiver
-      - "9464"          # Prometheus exporter
-      - "8888"          # metrics endpoint
+      - "4317" # OTLP over gRPC receiver
+      - "4318:4318" # OTLP over HTTP receiver
+      - "9464" # Prometheus exporter
+      - "8888" # metrics endpoint
     depends_on:
       - jaeger
     logging: *logging
@@ -173,6 +179,7 @@ services:
   # Prometheus
   prometheus:
     image: quay.io/prometheus/prometheus:v2.34.0
+    user: 501:20
     container_name: prometheus
     command:
       - --web.console.templates=/etc/prometheus/consoles
@@ -192,4 +199,3 @@ services:
     ports:
       - "${PROMETHEUS_SERVICE_PORT}:${PROMETHEUS_SERVICE_PORT}"
     logging: *logging
-
