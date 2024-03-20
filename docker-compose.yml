@@ -7,7 +7,7 @@ x-default-logging:
     max-file: "2"
 networks:
   default:
-    name: api-o11y
+    name: poc-dapr
     driver: bridge
 services:
   mysql-auth:
